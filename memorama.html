@@ -1,1 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Memoria - Selva Mágica 🍃</title>
+    <!-- Modern bold font for a cartoon look -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0d3222 0%, #175d3c 100%);
+            --card-front: #ffffff;
+            --text-color: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --accent: #f9d423;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Floating background shapes */
+        .bg-shapes {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+            overflow: hidden;
+        }
+
+        .shape {
+            position: absolute;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg) scale(1); }
+            100% { transform: translateY(-20vh) rotate(360deg) scale(1.5); }
+        }
+
+        .header {
+            z-index: 10;
+            text-align: center;
+            margin-bottom: 25px;
+            background: var(--glass-bg);
+            padding: 15px 35px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 26px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 18px;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        .game-board {
+            z-index: 10;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            perspective: 1000px;
+            padding: 20px;
+            background: var(--glass-bg);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .card {
+            width: 90px;
+            height: 120px;
+            cursor: pointer;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            border-radius: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .card { width: 70px; height: 100px; }
+            .game-board { gap: 10px; padding: 15px; }
+            .header { padding: 15px; flex-direction: column; gap: 10px; }
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.matched {
+            transform: rotateY(180deg) scale(1.05);
+            animation: pulse-matched 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-matched {
+            0% { box-shadow: 0 0 10px rgba(249, 212, 35, 0.5); }
+            100% { box-shadow: 0 0 20px rgba(249, 212, 35, 0.9); }
+        }
+
+        .card-face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background-size: cover;
+            background-position: center;
+            border-radius: 12px;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border: 2px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+        }
+
+        .card-front {
+            background-color: var(--card-front);
+            transform: rotateY(180deg);
+            font-size: 50px;
+        }
+
+        .card-front img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: 2px solid rgba(255,255,255,0.4);
+            position: relative;
+        }
+        
+        .card-back::after {
+            content: "🍃";
+            font-size: 35px;
+            opacity: 0.8;
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));
+        }
+
+        .btn-restart {
+            margin-top: 25px;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0d3222;
+            background: var(--accent);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(249, 212, 35, 0.4);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .btn-restart:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(249, 212, 35, 0.6);
+        }
+
+        .btn-restart:active {
+            transform: translateY(1px);
+        }
+
+        /* Win Modal Background Blur Layer */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: var(--bg-gradient);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transform: translateY(20px) scale(0.9);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal h2 {
+            font-size: 36px;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+        
+        .modal p {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-shapes" id="bgShapes"></div>
+
+    <div class="header">
+        <div class="title">Selva Mágica</div>
+        <div class="stats">
+            <div class="stat-box">
+                <span style="font-size:12px; opacity:0.8;">Movimientos</span>
+                <span class="stat-value" id="moves">0</span>
+            </div>
+            <div class="stat-box">
+                <span style="font-size:12px; opacity:0.8;">Tiempo</span>
+                <span class="stat-value" id="time">00:00</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-board" id="gameBoard">
+        <!-- Tarjetas inyectadas via JS -->
+    </div>
+
+    <button class="btn-restart" onclick="initGame()">Reiniciar Juego 🔄</button>
+
+    <div class="modal" id="winModal">
+        <div class="modal-content">
+            <h2>¡Felicidades! 🎉</h2>
+            <p>Completaste la selva en <strong id="finalMoves">0</strong> movimientos y un tiempo de <strong id="finalTime">00:00</strong>.</p>
+            <button class="btn-restart" onclick="initGame()">Jugar de nuevo</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        // Arreglo de animales: usamos las 3 imágenes generadas y completamos con emojis para tener un grid 4x3 (12 cartas, 6 pares)
+        const animals = [
+            { id: 'jaguar', type: 'image', content: 'assets/jaguar.png' },
+            { id: 'toucan', type: 'image', content: 'assets/toucan.png' },
+            { id: 'monkey', type: 'image', content: 'assets/monkey.png' },
+            { id: 'snake', type: 'emoji', content: '🐍' },
+            { id: 'elephant', type: 'emoji', content: '🐘' },
+            { id: 'tiger', type: 'emoji', content: '🐯' },
+        ];
+
+        let cards = [...animals, ...animals]; // Duplicar para tener los pares
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+        let matches = 0;
+        let moves = 0;
+        
+        let timer = null;
+        let seconds = 0;
+        let timerStarted = false;
+
+        const board = document.getElementById('gameBoard');
+        const movesEl = document.getElementById('moves');
+        const timeEl = document.getElementById('time');
+        const modal = document.getElementById('winModal');
+
+        // Configurar decoración de fondo flotante
+        function setupBackground() {
+            const container = document.getElementById('bgShapes');
+            container.innerHTML = '';
+            for(let i=0; i<15; i++) {
+                const shape = document.createElement('div');
+                shape.classList.add('shape');
+                const size = Math.random() * 80 + 30;
+                shape.style.width = size + 'px';
+                shape.style.height = size + 'px';
+                shape.style.left = Math.random() * 100 + 'vw';
+                shape.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                shape.style.animationDelay = (Math.random() * 10) + 's';
+                container.appendChild(shape);
+            }
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function initGame() {
+            modal.classList.remove('active');
+            board.innerHTML = '';
+            shuffle(cards);
+            
+            matches = 0;
+            moves = 0;
+            hasFlippedCard = false;
+            lockBoard = false;
+            firstCard = null;
+            secondCard = null;
+            
+            movesEl.innerText = moves;
+            resetTimer();
+
+            // Dibujar cartas
+            cards.forEach(animal => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.id = animal.id;
+                
+                let frontContent = animal.type === 'image' 
+                    ? `<img src="${animal.content}" alt="${animal.id}">`
+                    : animal.content;
+
+                card.innerHTML = `
+                    <div class="card-face card-front">${frontContent}</div>
+                    <div class="card-face card-back"></div>
+                `;
+                
+                card.addEventListener('click', flipCard);
+                board.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            if (!timerStarted) {
+                startTimer();
+                timerStarted = true;
+            }
+
+            this.classList.add('flipped');
+
+            if (!hasFlippedCard) {
+                // Primer click
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            // Segundo click
+            secondCard = this;
+            moves++;
+            movesEl.innerText = moves;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.id === secondCard.dataset.id;
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCards() {
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            
+            firstCard.classList.add('matched');
+            secondCard.classList.add('matched');
+
+            matches++;
+            resetBoard();
+
+            if (matches === animals.length) {
+                setTimeout(winGame, 800);
+            }
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                resetBoard();
+            }, 1000); // 1 segundo para intentar memorizarlas
+        }
+
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                seconds++;
+                let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                let s = (seconds % 60).toString().padStart(2, '0');
+                timeEl.innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            seconds = 0;
+            timerStarted = false;
+            timeEl.innerText = "00:00";
+        }
+
+        function winGame() {
+            clearInterval(timer);
+            document.getElementById('finalMoves').innerText = moves;
+            document.getElementById('finalTime').innerText = timeEl.innerText;
+            modal.classList.add('active');
+            fireConfetti();
+        }
+
+        function fireConfetti() {
+            var duration = 3000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                var particleCount = 50 * (timeLeft / duration);
+                // disparar desde posiciones aleatorias superiores
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        // Ejecución
+        setupBackground();
+        initGame();
+    </script>
+</body>
+</html>
